@@ -90,6 +90,14 @@ public class PhotoViewAttacher implements View.OnTouchListener,
     private boolean mZoomEnabled = true;
     private ScaleType mScaleType = ScaleType.FIT_CENTER;
 
+    private ImageFlingListener mImageFlingListener;
+    public interface ImageFlingListener {
+        /** フリック角度が45~135の場合に呼び出される */
+        void onUpFling();
+        /** フリック角度が225~315の場合に呼び出される */
+        void onDownFling();
+    }
+
     private OnGestureListener onGestureListener = new OnGestureListener() {
         @Override
         public void onDrag(float dx, float dy) {
@@ -259,6 +267,9 @@ public class PhotoViewAttacher implements View.OnTouchListener,
 
     public void setOnDoubleTapListener(GestureDetector.OnDoubleTapListener newOnDoubleTapListener) {
         this.mGestureDetector.setOnDoubleTapListener(newOnDoubleTapListener);
+    public void setImageFlingListener(ImageFlingListener imageFlingListener) {
+        this.mImageFlingListener = imageFlingListener;
+    }
     }
 
     public void setOnScaleChangeListener(OnScaleChangedListener onScaleChangeListener) {

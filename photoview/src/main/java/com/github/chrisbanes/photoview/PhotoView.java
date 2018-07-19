@@ -210,6 +210,10 @@ public class PhotoView extends ImageView {
         attacher.setScaleLevels(minimumScale, mediumScale, maximumScale);
     }
 
+    public void setImageFlingListener(PhotoViewAttacher.ImageFlingListener listener) {
+        attacher.setImageFlingListener(listener);
+    }
+
     public void setOnMatrixChangeListener(OnMatrixChangedListener listener) {
         attacher.setOnMatrixChangeListener(listener);
     }
