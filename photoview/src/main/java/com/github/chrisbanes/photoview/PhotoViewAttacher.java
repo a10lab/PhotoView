@@ -91,11 +91,17 @@ public class PhotoViewAttacher implements View.OnTouchListener,
     private ScaleType mScaleType = ScaleType.FIT_CENTER;
 
     private ImageFlingListener mImageFlingListener;
+    private OnDoubleTapListener mOnDoubleTapListener;
+
     public interface ImageFlingListener {
         /** フリック角度が45~135の場合に呼び出される */
         void onUpFling();
         /** フリック角度が225~315の場合に呼び出される */
         void onDownFling();
+    }
+
+    public interface OnDoubleTapListener {
+        void onDoubleTap();
     }
 
     private OnGestureListener onGestureListener = new OnGestureListener() {
@@ -265,11 +271,12 @@ public class PhotoViewAttacher implements View.OnTouchListener,
         });
     }
 
-    public void setOnDoubleTapListener(GestureDetector.OnDoubleTapListener newOnDoubleTapListener) {
-        this.mGestureDetector.setOnDoubleTapListener(newOnDoubleTapListener);
     public void setImageFlingListener(ImageFlingListener imageFlingListener) {
         this.mImageFlingListener = imageFlingListener;
     }
+
+    public void setOnDoubleTapListener(OnDoubleTapListener onDoubleTapListener) {
+        this.mOnDoubleTapListener = onDoubleTapListener;
     }
 
     public void setOnScaleChangeListener(OnScaleChangedListener onScaleChangeListener) {
