@@ -250,7 +250,7 @@ public class PhotoView extends ImageView {
         attacher.setZoomTransitionDuration(milliseconds);
     }
 
-    public void setOnDoubleTapListener(GestureDetector.OnDoubleTapListener onDoubleTapListener) {
+    public void setOnDoubleTapListener(PhotoViewAttacher.OnDoubleTapListener onDoubleTapListener) {
         attacher.setOnDoubleTapListener(onDoubleTapListener);
     }
 
