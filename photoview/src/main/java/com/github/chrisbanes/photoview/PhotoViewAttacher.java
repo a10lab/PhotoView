@@ -144,10 +144,31 @@ public class PhotoViewAttacher implements View.OnTouchListener,
 
         @Override
         public void onFling(float startX, float startY, float velocityX, float velocityY) {
-            mCurrentFlingRunnable = new FlingRunnable(mImageView.getContext());
-            mCurrentFlingRunnable.fling(getImageViewWidth(mImageView),
-                    getImageViewHeight(mImageView), (int) velocityX, (int) velocityY);
-            mImageView.post(mCurrentFlingRunnable);
+            Float scale = getScale();
+            if (0.99999 < scale && scale < 1.00001) {
+                // velocityXは何故か左がプラス、右がマイナスになっているので戻す
+                float x = -velocityX;
+                float y = velocityY;
+                // ベクトル--->ラジアン--->角度に変換して判定する
+                double s = Math.acos(x / Math.sqrt(x * x + y * y));
+                s = (s / Math.PI) * 180.0;
+                if (y < 0) {
+                    s = 360 - s;
+                }
+                int deg = (int) Math.floor(s);
+                if (mImageFlingListener != null) {
+                    if (45 <= deg && deg <= 135) {
+                        mImageFlingListener.onUpFling();
+                    } else if (225 < deg && deg <= 315) {
+                        mImageFlingListener.onDownFling();
+                    }
+                }
+            } else {
+                mCurrentFlingRunnable = new FlingRunnable(mImageView.getContext());
+                mCurrentFlingRunnable.fling(getImageViewWidth(mImageView),
+                        getImageViewHeight(mImageView), (int) velocityX, (int) velocityY);
+                mImageView.post(mCurrentFlingRunnable);
+            }
         }
 
         @Override
