@@ -20,7 +20,6 @@ import android.graphics.Matrix;
 import android.graphics.Matrix.ScaleToFit;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
-import android.support.v4.view.MotionEventCompat;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
@@ -91,6 +90,20 @@ public class PhotoViewAttacher implements View.OnTouchListener,
     private boolean mZoomEnabled = true;
     private ScaleType mScaleType = ScaleType.FIT_CENTER;
 
+    private ImageFlingListener mImageFlingListener;
+    private OnDoubleTapListener mOnDoubleTapListener;
+
+    public interface ImageFlingListener {
+        /** フリック角度が45~135の場合に呼び出される */
+        void onUpFling();
+        /** フリック角度が225~315の場合に呼び出される */
+        void onDownFling();
+    }
+
+    public interface OnDoubleTapListener {
+        void onDoubleTap();
+    }
+
     private OnGestureListener onGestureListener = new OnGestureListener() {
         @Override
         public void onDrag(float dx, float dy) {
@@ -131,10 +144,31 @@ public class PhotoViewAttacher implements View.OnTouchListener,
 
         @Override
         public void onFling(float startX, float startY, float velocityX, float velocityY) {
-            mCurrentFlingRunnable = new FlingRunnable(mImageView.getContext());
-            mCurrentFlingRunnable.fling(getImageViewWidth(mImageView),
-                    getImageViewHeight(mImageView), (int) velocityX, (int) velocityY);
-            mImageView.post(mCurrentFlingRunnable);
+            Float scale = getScale();
+            if (0.99999 < scale && scale < 1.00001) {
+                // velocityXは何故か左がプラス、右がマイナスになっているので戻す
+                float x = -velocityX;
+                float y = velocityY;
+                // ベクトル--->ラジアン--->角度に変換して判定する
+                double s = Math.acos(x / Math.sqrt(x * x + y * y));
+                s = (s / Math.PI) * 180.0;
+                if (y < 0) {
+                    s = 360 - s;
+                }
+                int deg = (int) Math.floor(s);
+                if (mImageFlingListener != null) {
+                    if (45 <= deg && deg <= 135) {
+                        mImageFlingListener.onUpFling();
+                    } else if (225 < deg && deg <= 315) {
+                        mImageFlingListener.onDownFling();
+                    }
+                }
+            } else {
+                mCurrentFlingRunnable = new FlingRunnable(mImageView.getContext());
+                mCurrentFlingRunnable.fling(getImageViewWidth(mImageView),
+                        getImageViewHeight(mImageView), (int) velocityX, (int) velocityY);
+                mImageView.post(mCurrentFlingRunnable);
+            }
         }
 
         @Override
@@ -181,8 +215,8 @@ public class PhotoViewAttacher implements View.OnTouchListener,
                         return false;
                     }
 
-                    if (MotionEventCompat.getPointerCount(e1) > SINGLE_TOUCH
-                            || MotionEventCompat.getPointerCount(e2) > SINGLE_TOUCH) {
+                    if (e1.getPointerCount() > SINGLE_TOUCH
+                            || e2.getPointerCount() > SINGLE_TOUCH) {
                         return false;
                     }
 
@@ -229,24 +263,27 @@ public class PhotoViewAttacher implements View.OnTouchListener,
                 return false;
             }
 
+            /**
+             * 元処理では「元サイズ--->拡大(中)--->拡大(大)--->元サイズ」
+             * なので、「元サイズ--->拡大(大)--->元サイズ」に修正
+             *
+             * @param ev
+             * @return
+             */
             @Override
             public boolean onDoubleTap(MotionEvent ev) {
-                try {
-                    float scale = getScale();
-                    float x = ev.getX();
-                    float y = ev.getY();
-
-                    if (scale < getMediumScale()) {
-                        setScale(getMediumScale(), x, y, true);
-                    } else if (scale >= getMediumScale() && scale < getMaximumScale()) {
-                        setScale(getMaximumScale(), x, y, true);
-                    } else {
-                        setScale(getMinimumScale(), x, y, true);
-                    }
-                } catch (ArrayIndexOutOfBoundsException e) {
-                    // Can sometimes happen when getX() and getY() is called
+                if (mOnDoubleTapListener != null) {
+                    mOnDoubleTapListener.onDoubleTap();
                 }
 
+                float e = getScale();
+                float x = ev.getX();
+                float y = ev.getY();
+                if (e >= getMinimumScale() && e < getMaximumScale()) {
+                    setScale(getMaximumScale(), x, y, true);
+                } else {
+                    setScale(getMinimumScale(), x, y, true);
+                }
                 return true;
             }
 
@@ -258,8 +295,12 @@ public class PhotoViewAttacher implements View.OnTouchListener,
         });
     }
 
-    public void setOnDoubleTapListener(GestureDetector.OnDoubleTapListener newOnDoubleTapListener) {
-        this.mGestureDetector.setOnDoubleTapListener(newOnDoubleTapListener);
+    public void setImageFlingListener(ImageFlingListener imageFlingListener) {
+        this.mImageFlingListener = imageFlingListener;
+    }
+
+    public void setOnDoubleTapListener(OnDoubleTapListener onDoubleTapListener) {
+        this.mOnDoubleTapListener = onDoubleTapListener;
     }
 
     public void setOnScaleChangeListener(OnScaleChangedListener onScaleChangeListener) {
